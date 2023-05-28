@@ -20,7 +20,7 @@
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
         const chatSocket = new WebSocket(
-            'ws://'
+            'wss://'
             + window.location.host
             + '/ws/chat/'
             + roomName
@@ -32,8 +32,16 @@
             if (data['now'] == 'chat') {
               document.querySelector('#chat-log').value += (data.message + '\n');
             } else if (data['now'] == 'draw') {
+              //context.moveTo(data['x'], data['y']);
               context.lineTo(data['x'], data['y']);
               context.stroke();
+              //drawing(data['x'], data['y'])
+            } else if (data['now'] == 'start') {
+                console.log(data['x'], data['y'])
+                lastX = data['x'];
+                lastY = data['y'];
+                context.beginPath();
+                context.moveTo(lastX, lastY);
             }
         };
 
@@ -72,27 +80,50 @@
         function startDrawing(e) {
           isDrawing = true;
           [lastX, lastY] = [e.offsetX, e.offsetY];
+
+          chatSocket.send(JSON.stringify({
+            'now': 'start',
+            'x': lastX,
+            'y': lastY,
+          }))
         }
 
+        
         function draw(e) {
             if (!isDrawing) return;
 
+            /*
             chatSocket.send(JSON.stringify({
               'now': 'draw',
               'x': e.offsetX,
               'y': e.offsetY
             }))
+            */
+
+            //drawing(e.offsetX, e.offsetY)
+            
             context.beginPath();
             context.moveTo(lastX, lastY);
             context.lineTo(e.offsetX, e.offsetY);
             context.stroke();
-            //[lastX, lastY] = [e.offsetX, e.offsetY];
-
-            if (isDrawing) {
-              lastX = e.offsetX;
-              lastY = e.offsetY;
-          }
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+            
+            chatSocket.send(JSON.stringify({
+                'now': 'draw',
+                'x': e.offsetX,
+                'y': e.offsetY
+              }))
         }
+
+        /*
+        function drawing(x, y) {
+            context.beginPath();
+            context.moveTo(lastX, lastY);
+            context.lineTo(x, y);
+            context.stroke();
+            [lastX, lastY] = [x, y];
+        }
+        */
 
         function stopDrawing() {
             isDrawing = false;

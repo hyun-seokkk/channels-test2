@@ -26,7 +26,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to room group
             message = text_data_json["message"]
             await self.channel_layer.group_send(
-                self.room_group_name, {"type": "chat_message", "message": message}
+                self.room_group_name, {
+                    "type": "chat_message", 
+                    "message": message
+                }
             )
         elif now == 'draw':
             x = text_data_json['x']
@@ -34,6 +37,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.room_group_name, {
                     "type": "draw_message", 
+                    "x": x,
+                    "y": y,
+                }
+            )
+        elif now == 'start':
+            x = text_data_json['x']
+            y = text_data_json['y']
+            await self.channel_layer.group_send(
+                self.room_group_name, {
+                    "type": "start_message", 
                     "x": x,
                     "y": y,
                 }
@@ -57,4 +70,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'x': x,
             'y': y,
             'now': 'draw',
+        }))
+
+
+    async def start_message(self, event):
+        x = event['x']
+        y = event['y']
+        await self.send(text_data=json.dumps({
+            'x': x,
+            'y': y,
+            'now': 'start',
         }))
