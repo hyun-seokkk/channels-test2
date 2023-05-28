@@ -19,8 +19,13 @@
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
+        var loc = window.location
+        var wsStart = 'ws://'
+        if(loc.protocol == 'https:'){
+          wsStart = 'wss://'
+        }
         const chatSocket = new WebSocket(
-            'ws://'
+            wsStart
             + window.location.host
             + '/ws/chat/'
             + roomName
@@ -30,14 +35,13 @@
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             if (data['now'] == 'chat') {
-              document.querySelector('#chat-log').value += (data.message + '\n');
+                document.querySelector('#chat-log').value += (data.message + '\n');
             } else if (data['now'] == 'draw') {
-              //context.moveTo(data['x'], data['y']);
-              context.lineTo(data['x'], data['y']);
-              context.stroke();
-              //drawing(data['x'], data['y'])
+                //context.moveTo(data['x'], data['y']);
+                context.lineTo(data['x'], data['y']);
+                context.stroke();
+                //drawing(data['x'], data['y'])
             } else if (data['now'] == 'start') {
-                console.log(data['x'], data['y'])
                 lastX = data['x'];
                 lastY = data['y'];
                 context.beginPath();
@@ -78,14 +82,14 @@
         canvas.addEventListener('mouseout', stopDrawing);
 
         function startDrawing(e) {
-          isDrawing = true;
-          [lastX, lastY] = [e.offsetX, e.offsetY];
-
-          chatSocket.send(JSON.stringify({
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        
+            chatSocket.send(JSON.stringify({
             'now': 'start',
             'x': lastX,
             'y': lastY,
-          }))
+            }))
         }
 
         
@@ -94,9 +98,9 @@
 
             /*
             chatSocket.send(JSON.stringify({
-              'now': 'draw',
-              'x': e.offsetX,
-              'y': e.offsetY
+                'now': 'draw',
+                'x': e.offsetX,
+                'y': e.offsetY
             }))
             */
 
@@ -112,7 +116,7 @@
                 'now': 'draw',
                 'x': e.offsetX,
                 'y': e.offsetY
-              }))
+                }))
         }
 
         /*
