@@ -31,6 +31,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'port-0-channels-test2-otjl2cli7ch7mi.sel4.cloudtype.app',
     '127.0.0.1',
+    'localhost',
 ]
 
 
