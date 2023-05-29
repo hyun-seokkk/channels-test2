@@ -70,11 +70,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         elif now == 'draw':
             x = text_data_json['x']
             y = text_data_json['y']
+            colorValue = text_data_json['colorValue']
+            sizeValue = text_data_json['sizeValue']
             await self.channel_layer.group_send(
                 self.room_group_name, {
                     "type": "draw_message", 
                     "x": x,
                     "y": y,
+                    "colorValue": colorValue,
+                    "sizeValue": sizeValue,
                     "user": user,
                 }
             )
@@ -89,6 +93,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "user": user,
                 }
             )
+        elif now == 'eraser':
+            x = text_data_json['x']
+            y = text_data_json['y']
+            await self.channel_layer.group_send(
+                self.room_group_name, {
+                    "type": "erase_message", 
+                    "x": x,
+                    "y": y,
+                    "user": user,
+                }
+            )
+
         elif now == 'eraseAll':
             await self.channel_layer.group_send(
                 self.room_group_name, {
@@ -116,7 +132,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             })
         )
     
+
+    # 그림 좌표 클라이언트로 전송
     async def draw_message(self, event):
+        x = event['x']
+        y = event['y']
+        colorValue = event['colorValue']
+        sizeValue = event['sizeValue']
+        user = event['user'].username
+        await self.send(text_data=json.dumps({
+            'x': x,
+            'y': y,
+            'colorValue': colorValue,
+            'sizeValue': sizeValue,
+            "user": user,
+            'now': 'draw',
+        }))
+
+
+    # 그림과 같지만 now만 eraser로 보내고 클라에서 처리
+    async def erase_message(self, event):
         x = event['x']
         y = event['y']
         user = event['user'].username
@@ -124,10 +159,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'x': x,
             'y': y,
             "user": user,
-            'now': 'draw',
+            'now': 'eraser',
         }))
 
 
+    # 그림 시작 좌표 클라로 전송
     async def start_message(self, event):
         x = event['x']
         y = event['y']
@@ -139,7 +175,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'now': 'start',
         }))
 
+
+    # 그림 전체삭제 호출 정보 클라로 전송
     async def erase_all_message(self, event):
         await self.send(text_data=json.dumps({
-                    'now': 'eraseAll',
-                }))
+            'now': 'eraseAll',
+        }))
