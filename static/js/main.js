@@ -120,6 +120,7 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 let colorValue = 'black'; // 색상
+let sizeValue = 5; // 두께
 let drawMode = 1; //1이 연필, 0이 지우개, 기본값 1
 
 canvas.addEventListener('mousedown', startDrawing);
