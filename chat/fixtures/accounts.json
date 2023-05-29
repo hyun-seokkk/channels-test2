@@ -1,0 +1,92 @@
+[
+{
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$gwRDHzUYgJDvexAUp3n4o2$Wf0DnDeyc+TXsS7DMApcfy8eORczFpyuVvOv9SZmHtU=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin1",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2023-05-29T07:57:01.413Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$WenSoSsBKaPehQz0AyW7jl$p1msXIt7iGl9yDN570YjXxm1Xie16DirN+MaUkvIR9E=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin2",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2023-05-29T07:57:10.525Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "accounts.user",
+    "pk": 3,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$8tQ3acrazaCV2eKW52KjWQ$L83GogbegQdkegcV7xNTIvh/Xy7mdB55tuI/4IFZM58=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin3",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2023-05-29T07:57:20.437Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "accounts.user",
+    "pk": 4,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$xnI8Zv9WKTHCXtgOu9LzvV$iXKW+EaXkxFpfk0CKL77vpn93lEsGWai3k8fHjK43Ig=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin4",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2023-05-29T07:57:29.517Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "accounts.user",
+    "pk": 5,
+    "fields": {
+        "password": "pbkdf2_sha256$260000$TZ4Bjm067TlrFDih5NJpqX$TF5GEJdmvLvSYd8mpMNOc36m7z664buo53Vv0OUXo/A=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin5",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2023-05-29T07:57:37.733Z",
+        "groups": [],
+        "user_permissions": []
+    }
+}
+]
