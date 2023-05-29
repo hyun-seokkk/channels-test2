@@ -15,6 +15,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        # 이전 채팅내역 클라이언트로 전송
         await self.send_existing_chat_messages()
 
 
@@ -88,6 +89,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "user": user,
                 }
             )
+        elif now == 'eraseAll':
+            await self.channel_layer.group_send(
+                self.room_group_name, {
+                    "type": "erase_all_message", 
+                }
+            )
 
 
     # 받은 메시지 db에 저장, 비동기적으로 작업 수행
@@ -131,3 +138,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "user": user,
             'now': 'start',
         }))
+
+    async def erase_all_message(self, event):
+        await self.send(text_data=json.dumps({
+                    'now': 'eraseAll',
+                }))
