@@ -39,6 +39,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'daphne',
     'chat',
+    'accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -132,6 +133,8 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = 'accounts.User'
+
 # daphne
 ASGI_APPLICATION = "config.asgi.application"
 
@@ -140,3 +143,6 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
+
+# 비동기 함수에서의 ORM 작성
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = 'true'

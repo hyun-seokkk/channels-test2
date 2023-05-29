@@ -5,7 +5,7 @@
     <title>Chat Rooms</title>
 </head>
 <body>
-    What chat room would you like to enter?<br>
+    {% comment %} What chat room would you like to enter?<br>
     <input id="room-name-input" type="text" size="100"><br>
     <input id="room-name-submit" type="button" value="Enter">
 
@@ -21,6 +21,15 @@
             var roomName = document.querySelector('#room-name-input').value;
             window.location.pathname = '/chat/' + roomName + '/';
         };
-    </script>
+    </script> {% endcomment %}
+
+    <h1>index</h1>
+    <p>{{ request.user }}</p>
+    <a href="{% url 'chat:create' %}">글 작성</a>
+    <hr>
+    {% for room in chatrooms %}
+      <a href="{% url 'chat:room' room.title %}">{{room.title}}</a>
+      <hr>
+    {% endfor %}
 </body>
 </html>
