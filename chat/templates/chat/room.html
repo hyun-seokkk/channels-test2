@@ -66,9 +66,25 @@
         background: black;
         border-radius: 50%;
       }
+      .position-ex {
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        background-color: #9bf50b;
+        display: none;
+        -webkit-user-select:none;
+        -moz-user-select:none;
+        -ms-user-select:none;
+        user-select:none;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
+    {% comment %} <div class="position-ex"></div> {% endcomment %}
     <h1 id="request-user-name">{{ request.user }}</h1>
     <div class="d-flex">
       <div>

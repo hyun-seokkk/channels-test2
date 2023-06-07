@@ -96,11 +96,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         elif now == 'eraser':
             x = text_data_json['x']
             y = text_data_json['y']
+            colorValue = text_data_json['colorValue']
+            sizeValue = text_data_json['sizeValue']
             await self.channel_layer.group_send(
                 self.room_group_name, {
                     "type": "erase_message", 
                     "x": x,
                     "y": y,
+                    "colorValue": colorValue,
+                    "sizeValue": sizeValue,
                     "user": user,
                 }
             )
@@ -109,6 +113,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.room_group_name, {
                     "type": "erase_all_message", 
+                }
+            )
+        elif now == 'position':
+            x = text_data_json['x']
+            y = text_data_json['y']
+            await self.channel_layer.group_send(
+                self.room_group_name, {
+                    "type": "position_message", 
+                    "x": x,
+                    "y": y,
+                    "user": user,
                 }
             )
 
@@ -154,10 +169,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def erase_message(self, event):
         x = event['x']
         y = event['y']
+        colorValue = event['colorValue']
+        sizeValue = event['sizeValue']
         user = event['user'].username
         await self.send(text_data=json.dumps({
             'x': x,
             'y': y,
+            "colorValue": colorValue,
+            "sizeValue": sizeValue,
             "user": user,
             'now': 'eraser',
         }))
@@ -180,4 +199,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def erase_all_message(self, event):
         await self.send(text_data=json.dumps({
             'now': 'eraseAll',
+        }))
+
+
+    # 마우스 위치 전송 (피그잼 마우스 위치 공유)
+    async def position_message(self, event):
+        x = event['x']
+        y = event['y']
+        user = event['user'].username
+        await self.send(text_data=json.dumps({
+            'x': x,
+            'y': y,
+            "user": user,
+            'now': 'position',
         }))
