@@ -10,6 +10,8 @@ const chatSocket = new WebSocket(
   wsStart + window.location.host + '/ws/chat/' + roomName + '/'
 );
 
+const curUser = document.querySelector('#request-user-name').textContent
+console.log(curUser)
 // 각 클라이언트별로 좌표 저장
 const drawingStates = {};
 
@@ -23,10 +25,10 @@ chatSocket.onmessage = function (e) {
   } else if (
     data.now === 'draw' ||
     data.now === 'start' ||
-    data.now === 'eraser'
+    data.now === 'eraser' ||
+    data.now === 'position'
   ) {
-    // 그림을 수신한 경우
-
+    // 그림, 마우스 위치 공유를 수신한 경우
     const clientId = data['user'];
     const { x, y } = data;
     const color = data['colorValue'];
@@ -37,16 +39,19 @@ chatSocket.onmessage = function (e) {
       drawingStates[clientId] = {
         lastX: x,
         lastY: y,
+        positionEx: addPositionExElement(clientId),
         color: color,
         size: size,
       };
+
     } else {
       // 기존 클라이언트의 좌표 업데이트
       const {
         lastX,
         lastY,
-        // color: clientColor,
-        // size: clientSize,
+        positionEx,
+        color: clientColor,
+        size: clientSize,
       } = drawingStates[clientId];
 
       if (data.now === 'start') {
@@ -58,20 +63,31 @@ chatSocket.onmessage = function (e) {
         const canvas = document.getElementById('drawing-canvas');
         const context = canvas.getContext('2d');
         if (data.now === 'draw') {
+          context.strokeStyle = clientColor;
+          context.lineWidth = clientSize;
+          context.beginPath();
+          context.moveTo(lastX, lastY);
+          context.lineTo(x, y);
+          context.stroke();
+        } else if (data.now === 'eraser') {
           context.strokeStyle = color;
           context.lineWidth = size;
           context.beginPath();
           context.moveTo(lastX, lastY);
           context.lineTo(x, y);
           context.stroke();
-        } else if (data.now === 'eraser') {
-          context.clearRect(x - 10, y - 10, 20, 20);
-        }
+        } 
 
         // 상태 업데이트
         drawingStates[clientId].lastX = x;
         drawingStates[clientId].lastY = y;
-      }
+      } else if (data.now === 'position') {
+        if (curUser.trim() != clientId.trim()) {
+          positionEx.style.display = 'block'
+          positionEx.style.left = x + 'px';
+          positionEx.style.top = y + 'px';
+        }
+      } 
     }
   } else if (data.now === 'eraseAll') {
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -110,7 +126,7 @@ const eraseAllBtn = document.getElementById('erase-all');
 const colorControl = document.querySelector('.control');
 const sizeControl = document.querySelector('.sizeControl');
 const pencilMode = document.querySelector('.pencil-mode');
-console.log(pencilMode);
+const positionEx = document.querySelector('.position-ex')
 
 context.lineCap = 'round';
 // context.lineWidth ? size
@@ -122,6 +138,7 @@ let lastY = 0;
 let colorValue = 'black'; // 색상
 let sizeValue = 5; // 두께
 let drawMode = 1; //1이 연필, 0이 지우개, 기본값 1
+let lastColor = 'black'; // 지우개에서 연필 선택할 때 색 되돌리기
 
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
@@ -135,7 +152,7 @@ pencilMode.addEventListener('click', setPencilMode);
 function startDrawing(e) {
   isDrawing = true;
   [lastX, lastY] = [e.offsetX, e.offsetY];
-
+  console.log(lastX, lastY)
   // 클라이언트별 시작 좌표를 갱신해주기 위해 시작점 따로 전송
   chatSocket.send(
     JSON.stringify({
@@ -147,43 +164,51 @@ function startDrawing(e) {
 }
 
 function draw(e) {
+  const mouseX = e.pageX;
+  const mouseY = e.pageY;
+  chatSocket.send(
+    JSON.stringify({
+      now: 'position',
+      x: mouseX,
+      y: mouseY,
+    })
+  );
   if (!isDrawing) return;
   const [x, y] = [e.offsetX, e.offsetY];
 
   if (drawMode) {
     // 연필모드
     context.beginPath();
-
     context.moveTo(lastX, lastY);
     context.lineTo(x, y);
     context.stroke();
     [lastX, lastY] = [e.offsetX, e.offsetY];
-
-    // 현재 마우스 좌표 전송
-    chatSocket.send(
-      JSON.stringify({
-        now: 'draw',
-        x: x,
-        y: y,
-        colorValue: colorValue,
-        sizeValue: sizeValue,
-      })
-    );
   } else {
     // 지우개모드
-    context.clearRect(x - 10, y - 10, 20, 20); // 지우개 크기
-
-    chatSocket.send(
-      JSON.stringify({
-        now: 'eraser',
-        x: x,
-        y: y,
-      })
-    );
+    context.beginPath();
+    // 배경색으로 칠하기
+    colorValue = "#eee"
+    context.strokeStyle = colorValue
+    context.moveTo(lastX, lastY);
+    context.lineTo(x, y);
+    context.stroke();
+    [lastX, lastY] = [e.offsetX, e.offsetY];
   }
+    // 그림 모드, 좌표, 두께정보 서버로 전송
+    chatSocket.send(
+    JSON.stringify({
+      now: drawMode ? 'draw' : 'eraser',
+      x: x,
+      y: y,
+      colorValue: colorValue,
+      sizeValue: sizeValue,
+    })
+  );
 }
 
 function stopDrawing() {
+  // mouseout 시에 마우스 위치 공유 사라지게
+  // positionEx.style.display = 'none'
   isDrawing = false;
 }
 
@@ -201,6 +226,7 @@ function eraseAll() {
 function setColor(e) {
   colorValue = e.target.getAttribute('data-color');
   context.strokeStyle = colorValue;
+  drawMode = 1
 }
 
 function setSize(e) {
@@ -211,5 +237,40 @@ function setSize(e) {
 function setPencilMode(e) {
   pencilValue = e.target.getAttribute('data-pencil');
   drawMode = Number(pencilValue);
+  if ( drawMode ) {
+    colorValue = lastColor
+  } else {
+    lastColor = colorValue
+  }
   console.log('drawMode: ', drawMode, typeof drawMode);
+}
+
+function addPositionExElement(clientId) {
+  const positionEx = document.createElement('div');
+  positionEx.className = 'position-ex';
+  positionEx.id = `position-ex-${clientId}`;
+  positionEx.style.backgroundColor = getClientColor(clientId); // 클라이언트별로 다른 배경색 설정
+
+  const clientIdElement = document.createElement('span');
+  clientIdElement.className = 'client-id';
+  clientIdElement.textContent = clientId;
+
+  positionEx.appendChild(clientIdElement);
+  document.body.appendChild(positionEx);
+
+  return positionEx;
+}
+
+// function getClientColor(clientId) {
+//   let sum = 0;
+//   for (let i = 0; i < clientId.length; i++) {
+//     sum += clientId.charCodeAt(i);
+//   }
+//   const hue = sum % 360; // 유저 이름의 합산 값을 360으로 나눈 나머지를 색상 hue로 사용
+//   return `hsl(${hue}, 100%, 50%)`;
+// }
+
+function getClientColor(clientId) {
+  const hue = Math.floor(Math.random() * 360); // 0부터 360 사이의 랜덤한 hue 값 생성
+  return `hsl(${hue}, 100%, 50%)`;
 }
