@@ -81,37 +81,58 @@
         user-select:none;
         pointer-events: none;
       }
+      video {
+        background-color: black;
+        border-radius: 8px;
+      }
+      #video-container div {
+        color: blue;
+      }
     </style>
   </head>
   <body>
     {% comment %} <div class="position-ex"></div> {% endcomment %}
     <h1 id="request-user-name">{{ request.user }}</h1>
-    <div class="d-flex">
-      <div>
-        <canvas id="drawing-canvas" width="1200" height="1000"></canvas>
-        <div class="pencil-mode">
-          <button class="pencil" data-pencil="1">연필</button>
-          <button class="eraser" data-pencil="0">지우개</button>
-        </div>
-        <button id="erase-all">전체 지우기</button>
-        <div class="control">
-          <button class="color-btn" data-color="black"></button>
-          <button class="color-btn" data-color="red"></button>
-          <button class="color-btn" data-color="green"></button>
-          <button class="color-btn" data-color="blue"></button>
-        </div>
-        <div class="sizeControl">
-          <button class="size-btn" data-size="5"></button>
-          <button class="size-btn" data-size="15"></button>
-          <button class="size-btn" data-size="30"></button>
+
+    <button id="join-btn">입장하기</button>
+
+    <main hidden>
+      <div id="video-container">
+        <div>
+          <video src="" id="local-video" style="float: left;" autoplay playsinline></video>
+          <button id="btn-toggle-audio">Audio UnMute</button>
+          <button id="btn-toggle-video">Video On</button>
         </div>
       </div>
-      <div>
-        <textarea id="chat-log" cols="60" rows="20"></textarea><br />
-        <input id="chat-message-input" type="text" size="60" /><br />
-        <input id="chat-message-submit" type="button" value="Send" />
+  
+      <div class="d-flex">
+        <div>
+          <canvas id="drawing-canvas" width="1200" height="1000"></canvas>
+          <div class="pencil-mode">
+            <button class="pencil" data-pencil="1">연필</button>
+            <button class="eraser" data-pencil="0">지우개</button>
+          </div>
+          <button id="erase-all">전체 지우기</button>
+          <div class="control">
+            <button class="color-btn" data-color="black"></button>
+            <button class="color-btn" data-color="red"></button>
+            <button class="color-btn" data-color="green"></button>
+            <button class="color-btn" data-color="blue"></button>
+          </div>
+          <div class="sizeControl">
+            <button class="size-btn" data-size="5"></button>
+            <button class="size-btn" data-size="15"></button>
+            <button class="size-btn" data-size="30"></button>
+          </div>
+        </div>
+        <div>
+          <textarea id="chat-log" cols="60" rows="20"></textarea><br />
+          <input id="chat-message-input" type="text" size="60" /><br />
+          <input id="chat-message-submit" type="button" value="Send" />
+        </div>
       </div>
-    </div>
+    </main>
+
 
     {{ room_name|json_script:"room-name" }}
 

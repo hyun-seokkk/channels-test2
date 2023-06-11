@@ -126,6 +126,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "user": user,
                 }
             )
+        elif now == 'new-peer':         
+            text_data_json['user'] = user.username
+            text_data_json['message']['receiver_channel_name'] = self.channel_name   
+            await self.channel_layer.group_send(
+                self.room_group_name, {
+                    'type': 'send_sdp', 
+                    'receive_dict': text_data_json,
+                }
+            )
+        elif now == 'new-offer' or now == 'new-answer':
+            text_data_json['user'] = user.username
+            receiver_channel_name = text_data_json['message']['receiver_channel_name']
+            text_data_json['message']['receiver_channel_name'] = self.channel_name 
+            await self.channel_layer.send(
+                receiver_channel_name, {
+                    'type': 'send_sdp',
+                    'receive_dict': text_data_json,
+                }
+            )
 
 
     # 받은 메시지 db에 저장, 비동기적으로 작업 수행
@@ -213,3 +232,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "user": user,
             'now': 'position',
         }))
+        
+        
+    # RTCSessionDescription을 원하는 receiver_channel_name에 송신
+    async def send_sdp(self, event):
+        receive_dict = event['receive_dict']
+        await self.send(text_data=json.dumps(receive_dict))
