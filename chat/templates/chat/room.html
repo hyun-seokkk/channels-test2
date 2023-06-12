@@ -10,108 +10,64 @@
       integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ"
       crossorigin="anonymous"
     />
-    <style>
-      canvas {
-        background: #eee;
-      }
-
-      .color-btn {
-        width: 30px;
-        height: 30px;
-        border: 0;
-        border-radius: 50%;
-      }
-
-      .color-btn[data-color='black'] {
-        background: black;
-      }
-      .color-btn[data-color='red'] {
-        background: red;
-      }
-      .color-btn[data-color='green'] {
-        background: green;
-      }
-      .color-btn[data-color='blue'] {
-        background: blue;
-      }
-
-      .size-btn {
-				width: 30px;
-        height: 30px;
-        border: 0;
-        border-radius: 50%;
-      }
-
-			.size-btn[data-size='5']::before {
-        content: '';
-        display: block;
-        width: 10px;
-        height: 10px;
-        background: black;
-        border-radius: 50%;
-      }
-			.size-btn[data-size='15']::before {
-        content: '';
-        display: block;
-        width: 15px;
-        height: 15px;
-        background: black;
-        border-radius: 50%;
-      }
-			.size-btn[data-size='30']::before {
-        content: '';
-        display: block;
-        width: 20px;
-        height: 20px;
-        background: black;
-        border-radius: 50%;
-      }
-      .position-ex {
-        position: absolute;
-        top: 0;
-        left: 0;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        background-color: #9bf50b;
-        display: none;
-        -webkit-user-select:none;
-        -moz-user-select:none;
-        -ms-user-select:none;
-        user-select:none;
-        pointer-events: none;
-      }
-    </style>
+    <link 
+    rel="stylesheet" 
+    href={% static 'css/live_chat.css' %}
+    />
   </head>
   <body>
     {% comment %} <div class="position-ex"></div> {% endcomment %}
     <h1 id="request-user-name">{{ request.user }}</h1>
-    <div class="d-flex">
-      <div>
-        <canvas id="drawing-canvas" width="1200" height="1000"></canvas>
-        <div class="pencil-mode">
-          <button class="pencil" data-pencil="1">연필</button>
-          <button class="eraser" data-pencil="0">지우개</button>
-        </div>
-        <button id="erase-all">전체 지우기</button>
-        <div class="control">
-          <button class="color-btn" data-color="black"></button>
-          <button class="color-btn" data-color="red"></button>
-          <button class="color-btn" data-color="green"></button>
-          <button class="color-btn" data-color="blue"></button>
-        </div>
-        <div class="sizeControl">
-          <button class="size-btn" data-size="5"></button>
-          <button class="size-btn" data-size="15"></button>
-          <button class="size-btn" data-size="30"></button>
+
+    <button id="join-btn">입장하기</button>
+
+    <main hidden>
+      <div id="video-container">
+        <div>
+          <video src="" id="local-video" style="float: left;" autoplay playsinline></video>
+          <button id="btn-toggle-audio">Audio UnMute</button>
+          <button id="btn-toggle-video">Video On</button>
         </div>
       </div>
-      <div>
-        <textarea id="chat-log" cols="60" rows="20"></textarea><br />
-        <input id="chat-message-input" type="text" size="60" /><br />
-        <input id="chat-message-submit" type="button" value="Send" />
+  
+      <div class="d-flex">
+        <div>
+          <canvas id="drawing-canvas" width="1200" height="1000"></canvas>
+          <div class="pencil-mode">
+            <button class="pencil" data-pencil="1">연필</button>
+            <button class="eraser" data-pencil="0">지우개</button>
+          </div>
+          <button id="erase-all">전체 지우기</button>
+          <div class="control">
+            <button class="color-btn" data-color="black"></button>
+            <button class="color-btn" data-color="red"></button>
+            <button class="color-btn" data-color="green"></button>
+            <button class="color-btn" data-color="blue"></button>
+          </div>
+          <div class="sizeControl">
+            <button class="size-btn" data-size="5"></button>
+            <button class="size-btn" data-size="15"></button>
+            <button class="size-btn" data-size="30"></button>
+          </div>
+        </div>
+        <div>
+          <textarea id="chat-log" cols="60" rows="20"></textarea><br />
+          <input id="chat-message-input" type="text" size="60" /><br />
+          <input id="chat-message-submit" type="button" value="Send" />
+        </div>
       </div>
-    </div>
+
+      <hr>
+      <p>참가자</p>
+      <div class="user-list">
+        <ul>
+          <li>
+            <p class="user-name"></p>
+            <button class="authorization-btn"></button>
+          </li>
+        </ul>
+      </div>
+    </main>
 
     {{ room_name|json_script:"room-name" }}
 
