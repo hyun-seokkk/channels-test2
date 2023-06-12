@@ -4,6 +4,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import ChatMessage, ChatRooms, UserChatRooms
+from accounts.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -95,14 +96,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 유저 목록 업데이트
     async def update_user_list(self):
         user_list = await self.get_user_list()
-
+        try:
+            presenter = UserChatRooms.objects.get(is_presenter=1).user.username
+        except UserChatRooms.DoesNotExist:
+            presenter = None  # 예외 발생 시 presenter를 None으로 설정하거나 다른 기본값으로 설정할 수 있습니다.
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "send_user_list",
                 "user_list": user_list,
+                "presenter": presenter,
             }
         )
+
 
 
     # 채팅방에 현재 유저 추가
@@ -132,10 +138,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         remaining_user_count = UserChatRooms.objects.filter(chatroom=self.room).count()
 
-        if remaining_user_count == 1:
-            remaining_user_chat_room = UserChatRooms.objects.filter(chatroom=self.room).first()
-            remaining_user_chat_room.is_presenter = 1
-            remaining_user_chat_room.save()
+        # if remaining_user_count == 1:
+        #     remaining_user_chat_room = UserChatRooms.objects.filter(chatroom=self.room).first()
+        #     remaining_user_chat_room.is_presenter = 1
+        #     remaining_user_chat_room.save()
+        # elif remaining_user_count == 0:
+        #     # If no remaining users, no need to assign presenter
+        #     pass
+        # else:
+        presenter_user_chat_room = None
+        presenter_user_chat_room = UserChatRooms.objects.filter(chatroom=self.room, is_presenter=1).first()
+        if not presenter_user_chat_room:
+            # The leaving user was the presenter
+            new_presenter_user_chat_room = UserChatRooms.objects.filter(chatroom=self.room).order_by('pk').first()
+            new_presenter_user_chat_room.is_presenter = 1
+            new_presenter_user_chat_room.save()
 
         await self.update_user_list()
 
@@ -244,6 +261,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'receive_dict': text_data_json,
                 }
             )
+        elif now == 'authorize-presenter':
+            # 발표자 권한 변경 메시지를 수신한 경우
+            user = text_data_json['user']
+            user = User.objects.get(username=user)
+            try:
+                prev_presenter = UserChatRooms.objects.get(is_presenter=1)
+                next_presenter = UserChatRooms.objects.get(user=user)
+                prev_presenter.is_presenter = 0
+                next_presenter.is_presenter = 1
+                next_presenter.save()
+                prev_presenter.save()
+
+                presenter_user = next_presenter.user
+                print(presenter_user)
+
+                # 변경된 발표자 권한을 클라이언트에 알림
+                await self.channel_layer.group_send(
+                    self.room_group_name, {
+                        'type': 'send_presenter_authorized',
+                        'next_presenter': presenter_user.username,
+                    }
+                )
+            except UserChatRooms.DoesNotExist:
+                print('UserChatRooms not found for user:', user)
 
 
     # 받은 메시지 db에 저장, 비동기적으로 작업 수행
@@ -342,7 +383,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 유저 목록 전송
     async def send_user_list(self, event):
         user_list = event['user_list']
+        presenter = event['presenter']
         await self.send(text_data=json.dumps({
             "user_list": user_list,
+            "presenter": presenter,
             "now": "user_list"
+        }))
+
+    
+    async def send_presenter_authorized(self, event):
+        next_presenter = event['next_presenter']
+        await self.send(text_data=json.dumps({
+            "next_presenter": next_presenter,
+            "now": 'presenter_authorized'
         }))
