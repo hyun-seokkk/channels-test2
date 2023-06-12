@@ -33,6 +33,7 @@ let colorValue = 'black'; // 색상
 let sizeValue = 5; // 두께
 let drawMode = 1; //1이 연필, 0이 지우개, 기본값 1
 let lastColor = 'black'; // 지우개에서 연필 선택할 때 색 되돌리기
+let presenterUser = ''; // 현재 발표자 이름 담을 변수
 
 // 비동기 in promise를 위한 방 입장 버튼
 btnJoin.addEventListener('click', (e) => {
@@ -155,8 +156,12 @@ function chatSocketOnMessage(e) {
   } else if (data.now === 'user_list') {
     // 유저 리스트를 수신한 경우
     userList = data.user_list; // 유저 목록 업데이트
-
+    presenterUser = data.presenter
     // 유저목록 업데이트
+    updateUserList();
+  } else if (data.now === 'presenter_authorized') {
+    console.log('권한!')
+    presenterUser = data.next_presenter
     updateUserList();
   } else if (
     data.now === 'new-peer'   ||
@@ -240,35 +245,55 @@ function updateUserList() {
     const userName = document.createElement('p');
     userName.className = 'user-name';
     userName.textContent = user; 
-    const authorizationBtn = document.createElement('button');
-    authorizationBtn.className = 'authorization-btn';
-    // 버튼에 원하는 내용 설정
-    authorizationBtn.textContent = 'Authorize';
-
-    // 버튼 클릭 이벤트 핸들러 추가
-    authorizationBtn.addEventListener('click', () => {
-      authorizePresenter(user); // 발표자 권한 변경 요청 함수 호출
-    });
 
     userItem.appendChild(userName);
-    userItem.appendChild(authorizationBtn);
+
+    // 발표자 권한이 있는 유저에게만 버튼 생성
+    if (user != presenterUser && curUser === presenterUser) {
+      const authorizationBtn = document.createElement('button');
+      authorizationBtn.className = 'authorization-btn';
+      // 버튼에 원하는 내용 설정
+      authorizationBtn.textContent = 'Authorize';
+
+      // 버튼 클릭 이벤트 핸들러 추가
+      authorizationBtn.addEventListener('click', () => {
+        authorizePresenter(user); // 발표자 권한 변경 요청 함수 호출
+      });
+
+      userItem.appendChild(authorizationBtn);
+    }
+    
     userContainer.appendChild(userItem);
   }
 }
 
-function startDrawing(e) {
-  console.log('startDrawing')
-  isDrawing = true;
-  [lastX, lastY] = [e.offsetX, e.offsetY];
-  console.log(lastX, lastY)
-  // 클라이언트별 시작 좌표를 갱신해주기 위해 시작점 따로 전송
+// 발표자 권한 메시지
+function authorizePresenter(user) {
+  // 서버에 발표자 권한을 변경 요청하는 메시지 전송
   chatSocket.send(
     JSON.stringify({
-      now: 'start',
-      x: lastX,
-      y: lastY,
+      now: 'authorize-presenter',
+      user: user,
     })
   );
+}
+
+
+function startDrawing(e) {
+  if (curUser === presenterUser) {
+    console.log('startDrawing')
+    isDrawing = true;
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+    console.log(lastX, lastY)
+    // 클라이언트별 시작 좌표를 갱신해주기 위해 시작점 따로 전송
+    chatSocket.send(
+      JSON.stringify({
+        now: 'start',
+        x: lastX,
+        y: lastY,
+      })
+    );
+  }
 }
 
 function draw(e) {
@@ -282,37 +307,40 @@ function draw(e) {
       y: mouseY,
     })
   );
-  if (!isDrawing) return;
-  const [x, y] = [e.offsetX, e.offsetY];
+  if (curUser === presenterUser) {
 
-  if (drawMode) {
-    // 연필모드
-    context.beginPath();
-    context.moveTo(lastX, lastY);
-    context.lineTo(x, y);
-    context.stroke();
-    [lastX, lastY] = [e.offsetX, e.offsetY];
-  } else {
-    // 지우개모드
-    context.beginPath();
-    // 배경색으로 칠하기
-    colorValue = "#eee"
-    context.strokeStyle = colorValue
-    context.moveTo(lastX, lastY);
-    context.lineTo(x, y);
-    context.stroke();
-    [lastX, lastY] = [e.offsetX, e.offsetY];
+    if (!isDrawing) return;
+    const [x, y] = [e.offsetX, e.offsetY];
+  
+    if (drawMode) {
+      // 연필모드
+      context.beginPath();
+      context.moveTo(lastX, lastY);
+      context.lineTo(x, y);
+      context.stroke();
+      [lastX, lastY] = [e.offsetX, e.offsetY];
+    } else {
+      // 지우개모드
+      context.beginPath();
+      // 배경색으로 칠하기
+      colorValue = "#eee"
+      context.strokeStyle = colorValue
+      context.moveTo(lastX, lastY);
+      context.lineTo(x, y);
+      context.stroke();
+      [lastX, lastY] = [e.offsetX, e.offsetY];
+    }
+      // 그림 모드, 좌표, 두께정보 서버로 전송
+      chatSocket.send(
+      JSON.stringify({
+        now: drawMode ? 'draw' : 'eraser',
+        x: x,
+        y: y,
+        colorValue: colorValue,
+        sizeValue: sizeValue,
+      })
+    );
   }
-    // 그림 모드, 좌표, 두께정보 서버로 전송
-    chatSocket.send(
-    JSON.stringify({
-      now: drawMode ? 'draw' : 'eraser',
-      x: x,
-      y: y,
-      colorValue: colorValue,
-      sizeValue: sizeValue,
-    })
-  );
 }
 
 function stopDrawing() {
@@ -371,14 +399,6 @@ function addPositionExElement(clientId) {
   return positionEx;
 }
 
-// function getClientColor(clientId) {
-//   let sum = 0;
-//   for (let i = 0; i < clientId.length; i++) {
-//     sum += clientId.charCodeAt(i);
-//   }
-//   const hue = sum % 360; // 유저 이름의 합산 값을 360으로 나눈 나머지를 색상 hue로 사용
-//   return `hsl(${hue}, 100%, 50%)`;
-// }
 
 function getClientColor(clientId) {
   const hue = Math.floor(Math.random() * 360); // 0부터 360 사이의 랜덤한 hue 값 생성
