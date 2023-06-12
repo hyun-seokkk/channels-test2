@@ -20,8 +20,11 @@ chatSocket.onmessage = function (e) {
   if (data['now'] == 'chat') {
     // 채팅을 수신한 경우
     console.log('채팅 수신');
-    document.querySelector('#chat-log').value +=
+    const chatLog = document.querySelector('#chat-log')
+    chatLog.value +=
       data.user + ' : ' + data.message + '\n';
+    // 채팅 스크롤 항상 최하단부로
+    chatLog.scrollTop = chatLog.scrollHeight;
   } else if (
     data.now === 'draw' ||
     data.now === 'start' ||
@@ -63,8 +66,8 @@ chatSocket.onmessage = function (e) {
         const canvas = document.getElementById('drawing-canvas');
         const context = canvas.getContext('2d');
         if (data.now === 'draw') {
-          context.strokeStyle = clientColor;
-          context.lineWidth = clientSize;
+          context.strokeStyle = color;
+          context.lineWidth = size;
           context.beginPath();
           context.moveTo(lastX, lastY);
           context.lineTo(x, y);
@@ -91,7 +94,13 @@ chatSocket.onmessage = function (e) {
     }
   } else if (data.now === 'eraseAll') {
     context.clearRect(0, 0, canvas.width, canvas.height);
-  }
+  } else if (data.now === 'user_list') {
+    // 유저 리스트를 수신한 경우
+    userList = data.user_list; // 유저 목록 업데이트
+
+    // 유저목록 업데이트
+    updateUserList();
+  } 
 };
 
 chatSocket.onclose = function (e) {
@@ -120,6 +129,19 @@ document.querySelector('#chat-message-submit').onclick = function (e) {
   messageInputDom.value = '';
 };
 
+
+/* 주기적으로 유저 접속여부 확인 (실패)
+// 클라이언트의 연결 상태 확인
+setInterval(() => {
+  // Keep-alive 메시지를 서버로 보냄
+  chatSocket.send(
+    JSON.stringify({ 
+      now: 'keep_alive',
+    })
+  );
+}, 5000); // 5초마다 keep-alive 메시지 전송
+*/
+
 const canvas = document.getElementById('drawing-canvas');
 const context = canvas.getContext('2d');
 const eraseAllBtn = document.getElementById('erase-all');
@@ -127,6 +149,7 @@ const colorControl = document.querySelector('.control');
 const sizeControl = document.querySelector('.sizeControl');
 const pencilMode = document.querySelector('.pencil-mode');
 const positionEx = document.querySelector('.position-ex')
+const userContainer = document.querySelector('.user-list');
 
 context.lineCap = 'round';
 // context.lineWidth ? size
@@ -139,6 +162,8 @@ let colorValue = 'black'; // 색상
 let sizeValue = 5; // 두께
 let drawMode = 1; //1이 연필, 0이 지우개, 기본값 1
 let lastColor = 'black'; // 지우개에서 연필 선택할 때 색 되돌리기
+let userList = []; // 유저 목록을 저장하는 배열
+
 
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
@@ -162,6 +187,44 @@ function startDrawing(e) {
     })
   );
 }
+
+
+// 유저 목록 업데이트
+function updateUserList() {
+  const userContainer = document.querySelector('.user-list ul');
+  userContainer.innerHTML = ''; // 기존 유저 목록 초기화
+
+  for (const user of userList) {
+    const userItem = document.createElement('li');
+    const userName = document.createElement('p');
+    userName.className = 'user-name';
+    userName.textContent = user; 
+    const authorizationBtn = document.createElement('button');
+    authorizationBtn.className = 'authorization-btn';
+    // 버튼에 원하는 내용 설정
+    authorizationBtn.textContent = 'Authorize';
+
+    // 버튼 클릭 이벤트 핸들러 추가
+    authorizationBtn.addEventListener('click', () => {
+      authorizePresenter(user); // 발표자 권한 변경 요청 함수 호출
+    });
+
+    userItem.appendChild(userName);
+    userItem.appendChild(authorizationBtn);
+    userContainer.appendChild(userItem);
+  }
+}
+
+// 권한 부여 메시지
+function authorizePresenter(userId) {
+  chatSocket.send(
+    JSON.stringify({
+      now: 'authorize_presenter',
+      userId: userId,
+    })
+  );
+}
+
 
 function draw(e) {
   const mouseX = e.pageX;

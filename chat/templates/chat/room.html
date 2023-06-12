@@ -81,6 +81,12 @@
         user-select:none;
         pointer-events: none;
       }
+
+      .user-list {
+        width: 200px; /* 적당한 너비 설정 */
+        height: 300px; /* 적당한 높이 설정 */
+        overflow: scroll; /* 세로 스크롤 가능하도록 설정 */
+      }
     </style>
   </head>
   <body>
@@ -107,9 +113,21 @@
         </div>
       </div>
       <div>
-        <textarea id="chat-log" cols="60" rows="20"></textarea><br />
-        <input id="chat-message-input" type="text" size="60" /><br />
-        <input id="chat-message-submit" type="button" value="Send" />
+        <div>
+          <textarea id="chat-log" cols="60" rows="20"></textarea><br />
+          <input id="chat-message-input" type="text" size="60" /><br />
+          <input id="chat-message-submit" type="button" value="Send" />
+        </div>
+        <hr>
+        <p>참가자</p>
+        <div class="user-list">
+          <ul>
+            <li>
+              <p class="user-name"></p>
+              <button class="authorization-btn"></button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
