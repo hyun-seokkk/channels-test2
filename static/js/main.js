@@ -20,6 +20,7 @@ const colorControl = document.querySelector('.control');
 const sizeControl = document.querySelector('.sizeControl');
 const pencilMode = document.querySelector('.pencil-mode');
 const positionEx = document.querySelector('.position-ex')
+const userContainer = document.querySelector('.user-list');
 
 context.lineCap = 'round';
 // context.lineWidth ? size
@@ -123,8 +124,8 @@ function chatSocketOnMessage(e) {
         const canvas = document.getElementById('drawing-canvas');
         const context = canvas.getContext('2d');
         if (data.now === 'draw') {
-          context.strokeStyle = clientColor;
-          context.lineWidth = clientSize;
+          context.strokeStyle = color;
+          context.lineWidth = size;
           context.beginPath();
           context.moveTo(lastX, lastY);
           context.lineTo(x, y);
@@ -151,6 +152,12 @@ function chatSocketOnMessage(e) {
     }
   } else if (data.now === 'eraseAll') {
     context.clearRect(0, 0, canvas.width, canvas.height);
+  } else if (data.now === 'user_list') {
+    // 유저 리스트를 수신한 경우
+    userList = data.user_list; // 유저 목록 업데이트
+
+    // 유저목록 업데이트
+    updateUserList();
   } else if (
     data.now === 'new-peer'   ||
     data.now === 'new-offer'  ||
@@ -185,7 +192,7 @@ function chatSocketOnMessage(e) {
       const peer = mapPeers[peerUsername][0]
       
       peer.setRemoteDescription(answer)
-        .then(() => {
+      .then(() => {
           console.log('[setRemoteDescription(answer)] peer : ', peer)
           console.log('[setRemoteDescription(answer)] answer : ', answer)
         })
@@ -222,6 +229,32 @@ document.querySelector('#chat-message-submit').onclick = function (e) {
   );
   messageInputDom.value = '';
 };
+
+// 유저 목록 업데이트
+function updateUserList() {
+  const userContainer = document.querySelector('.user-list ul');
+  userContainer.innerHTML = ''; // 기존 유저 목록 초기화
+
+  for (const user of userList) {
+    const userItem = document.createElement('li');
+    const userName = document.createElement('p');
+    userName.className = 'user-name';
+    userName.textContent = user; 
+    const authorizationBtn = document.createElement('button');
+    authorizationBtn.className = 'authorization-btn';
+    // 버튼에 원하는 내용 설정
+    authorizationBtn.textContent = 'Authorize';
+
+    // 버튼 클릭 이벤트 핸들러 추가
+    authorizationBtn.addEventListener('click', () => {
+      authorizePresenter(user); // 발표자 권한 변경 요청 함수 호출
+    });
+
+    userItem.appendChild(userName);
+    userItem.appendChild(authorizationBtn);
+    userContainer.appendChild(userItem);
+  }
+}
 
 function startDrawing(e) {
   console.log('startDrawing')
@@ -407,16 +440,16 @@ function createOfferer(peerUsername, receiver_channel_name) {
 
   addLocalTracks(peer)
 
-  const dc = peer.createDataChannel('channel')
-  dc.addEventListener('open', () => {
-    console.log('Connection opened!')
-  })
+  // const dc = peer.createDataChannel('channel')
+  // dc.addEventListener('open', () => {
+  //   console.log('Connection opened!')
+  // })
 
   const remoteVideo = createVideo(peerUsername)
 
   setOnTrack(peer, remoteVideo)
 
-  mapPeers[peerUsername] = [peer, dc]
+  mapPeers[peerUsername] = [peer, '']
 
   peer.addEventListener('iceconnectionstatechange', () => {
     const iceConnectionState = peer.iceConnectionState
@@ -475,14 +508,14 @@ function createAnswerer(offer, peerUsername, receiver_channel_name) {
   
   setOnTrack(peer, remoteVideo)
   
-  peer.addEventListener('datachannel', e => {
-    peer.dc = e.channel
-    peer.dc.addEventListener('open', () => {
-      console.log('Connection opened!')
-    })
+  // peer.addEventListener('datachannel', e => {
+  //   peer.dc = e.channel
+  //   peer.dc.addEventListener('open', () => {
+  //     console.log('Connection opened!')
+  //   })
 
-    mapPeers[peerUsername] = [peer, peer.dc]
-  })
+  //   mapPeers[peerUsername] = [peer, peer.dc]
+  // })
 
   peer.addEventListener('iceconnectionstatechange', () => {
     const iceConnectionState = peer.iceConnectionState

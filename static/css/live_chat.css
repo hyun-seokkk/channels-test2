@@ -1,0 +1,83 @@
+canvas {
+  background: #eee;
+}
+
+.color-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+}
+
+.color-btn[data-color='black'] {
+  background: black;
+}
+.color-btn[data-color='red'] {
+  background: red;
+}
+.color-btn[data-color='green'] {
+  background: green;
+}
+.color-btn[data-color='blue'] {
+  background: blue;
+}
+
+.size-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+}
+
+.size-btn[data-size='5']::before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: black;
+  border-radius: 50%;
+}
+.size-btn[data-size='15']::before {
+  content: '';
+  display: block;
+  width: 15px;
+  height: 15px;
+  background: black;
+  border-radius: 50%;
+}
+.size-btn[data-size='30']::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: black;
+  border-radius: 50%;
+}
+.position-ex {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  background-color: #9bf50b;
+  display: none;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  user-select:none;
+  pointer-events: none;
+}
+video {
+  background-color: black;
+  border-radius: 8px;
+}
+#video-container div {
+  color: blue;
+}
+
+.user-list {
+  width: 200px; /* 적당한 너비 설정 */
+  height: 300px; /* 적당한 높이 설정 */
+  overflow: scroll; /* 세로 스크롤 가능하도록 설정 */
+}

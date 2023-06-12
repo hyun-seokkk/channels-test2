@@ -1,8 +1,9 @@
 import json
+import asyncio
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import ChatMessage, ChatRooms
+from .models import ChatMessage, ChatRooms, UserChatRooms
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -17,6 +18,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # 이전 채팅내역 클라이언트로 전송
         await self.send_existing_chat_messages()
+
+
+        # 입장 메시지 전송
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "system_message",
+                "message": f"{self.scope['user'].username}님이 입장하셨습니다."
+            }
+        )
+
+        # 채팅방에 현재 유저 추가
+        await self.add_user_to_chat_room()
+
+        async def send_user_list(self, event):
+            user_list = event['user_list']
+            await self.send(text_data=json.dumps({
+                "user_list": user_list,
+                "now": "user_list"
+            }))
 
 
     @database_sync_to_async
@@ -44,9 +65,87 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
 
 
+    # 유저 입장메시지 전송
+    async def system_message(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            "message": message,
+            "user": "System",
+            "now": 'chat',
+        }))
+
+
     async def disconnect(self, close_code):
+        # 퇴장 메시지 전송
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "system_message",
+                "message": f"{self.scope['user'].username}님이 퇴장하셨습니다."
+            }
+        )
+
+        # 채팅방에서 현재 유저 제거
+        await self.remove_user_from_chat_room()
+
         # Leave room group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+
+
+    # 유저 목록 업데이트
+    async def update_user_list(self):
+        user_list = await self.get_user_list()
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "send_user_list",
+                "user_list": user_list,
+            }
+        )
+
+
+    # 채팅방에 현재 유저 추가
+    # @database_sync_to_async
+    async def add_user_to_chat_room(self):
+        user_chat_room, created = UserChatRooms.objects.get_or_create(
+            user=self.scope['user'],
+            chatroom=self.room
+        )
+
+        if created:
+            if self.room.user_chat_rooms.count() == 1:
+                user_chat_room.is_presenter = 1
+            await self.update_user_list()
+            await database_sync_to_async(user_chat_room.save)()
+
+        if user_chat_room:
+            await self.update_user_list()
+
+
+    # 채팅방에서 현재 유저 제거
+    # @database_sync_to_async
+    async def remove_user_from_chat_room(self):
+        user = self.scope['user']
+
+        UserChatRooms.objects.filter(user=user, chatroom=self.room).delete()
+
+        remaining_user_count = UserChatRooms.objects.filter(chatroom=self.room).count()
+
+        if remaining_user_count == 1:
+            remaining_user_chat_room = UserChatRooms.objects.filter(chatroom=self.room).first()
+            remaining_user_chat_room.is_presenter = 1
+            remaining_user_chat_room.save()
+
+        await self.update_user_list()
+
+
+    # 유저 목록 가져오기
+    @database_sync_to_async
+    def get_user_list(self):
+        user_list = UserChatRooms.objects.filter(chatroom=self.room).values_list('user__username', flat=True)
+        return list(user_list)
+
 
     # Receive message from WebSocket
     async def receive(self, text_data):
@@ -238,3 +337,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def send_sdp(self, event):
         receive_dict = event['receive_dict']
         await self.send(text_data=json.dumps(receive_dict))
+
+    
+    # 유저 목록 전송
+    async def send_user_list(self, event):
+        user_list = event['user_list']
+        await self.send(text_data=json.dumps({
+            "user_list": user_list,
+            "now": "user_list"
+        }))
